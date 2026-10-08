@@ -2,8 +2,9 @@
 /*
  * Auto-cut charging module for X00TD (4.19 final)
  * - INPUT_SUSPEND for real power cut
- * - USB plug-in detection: always resume on connect
+ * - USB plug-in detection: resume on connect (unless ROM limit wants off)
  * - Hysteresis: stop at max, resume at min, do nothing in between
+ * - Yields to ROM charge limit (charging_enabled == 0)
  */
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -21,11 +22,27 @@ MODULE_PARM_DESC(min_soc, "Min SOC to resume charging (default 90)");
 static struct delayed_work autocut_work;
 static int last_usb_present = -1;
 
+/* write input_suspend only if it differs from current state */
+static void autocut_set_suspend(struct power_supply *batt_psy, int want)
+{
+	union power_supply_propval val;
+	int ret;
+
+	ret = power_supply_get_property(batt_psy,
+			POWER_SUPPLY_PROP_INPUT_SUSPEND, &val);
+	if (!ret && val.intval == want)
+		return;
+
+	val.intval = want;
+	power_supply_set_property(batt_psy,
+			POWER_SUPPLY_PROP_INPUT_SUSPEND, &val);
+}
+
 static void autocut_work_fn(struct work_struct *work)
 {
 	struct power_supply *batt_psy, *usb_psy;
 	union power_supply_propval val;
-	int ret, capacity, usb_present = 0;
+	int ret, capacity, usb_present = 0, rom_off = 0;
 
 	/* Check USB present */
 	usb_psy = power_supply_get_by_name("usb");
@@ -49,24 +66,27 @@ static void autocut_work_fn(struct work_struct *work)
 	}
 	capacity = val.intval;
 
-	/* Charger just plugged in: always allow charging first */
+	/* ROM charge limit wants charging off? then never resume */
+	ret = power_supply_get_property(batt_psy,
+			POWER_SUPPLY_PROP_CHARGING_ENABLED, &val);
+	if (!ret && val.intval == 0)
+		rom_off = 1;
+
+	/* Charger just plugged in: allow charging first */
 	if (usb_present == 1 && last_usb_present != 1) {
-		val.intval = 0;
-		power_supply_set_property(batt_psy, POWER_SUPPLY_PROP_INPUT_SUSPEND, &val);
-		pr_info("autocut: charger plugged, force resume (soc=%d)\n", capacity);
+		if (!rom_off) {
+			autocut_set_suspend(batt_psy, 0);
+			pr_info("autocut: charger plugged, force resume (soc=%d)\n", capacity);
+		}
 	}
 	/* Charger connected: apply SOC thresholds only */
 	else if (usb_present == 1) {
 		if (capacity >= max_soc) {
-			val.intval = 1;
-			power_supply_set_property(batt_psy, POWER_SUPPLY_PROP_INPUT_SUSPEND, &val);
-			pr_info("autocut: charging STOPPED at %d%% (max=%d)\n", capacity, max_soc);
-		} else if (capacity <= min_soc) {
-			val.intval = 0;
-			power_supply_set_property(batt_psy, POWER_SUPPLY_PROP_INPUT_SUSPEND, &val);
-			pr_info("autocut: charging RESUMED at %d%% (min=%d)\n", capacity, min_soc);
+			autocut_set_suspend(batt_psy, 1);
+		} else if (capacity <= min_soc && !rom_off) {
+			autocut_set_suspend(batt_psy, 0);
 		}
-		/* else: between min and max, do nothing (keep current state) */
+		/* else: between min and max, or ROM limit active: do nothing */
 	}
 
 	last_usb_present = usb_present;
