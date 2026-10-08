@@ -972,6 +972,16 @@ int smblib_set_icl_current(struct smb_charger *chg, int icl_ua)
 		}
 	} else {
 		set_sdp_current(chg, 100000);
+			/*
+		 * Try USB 2.0/3,0 option first on USB path when maximum input
+		 * current limit is 500mA or below for better accuracy; in case
+		 * of error, proceed to use USB high-current mode.
+		 */
+		if (icl_ua <= USBIN_500MA) {
+			rc = set_sdp_current(chg, icl_ua);
+			if (rc >= 0)
+				goto enable_icl_changed_interrupt;
+		}
 		rc = smblib_set_charge_param(chg, &chg->param.usb_icl, icl_ua);
 		if (rc < 0) {
 			smblib_err(chg, "Couldn't set HC ICL rc=%d\n", rc);
