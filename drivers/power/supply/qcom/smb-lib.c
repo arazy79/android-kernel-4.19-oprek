@@ -21,7 +21,7 @@
 #include <linux/fastchg.h>
 static bool const_icl_enable = true;
 module_param(const_icl_enable, bool, 0644);
-#define CONST_ICL_UA 200000
+#define CONST_ICL_UA 250000
 #endif
 
 #define smblib_err(chg, fmt, ...)		\
@@ -2193,6 +2193,11 @@ int smblib_set_prop_system_temp_level(struct smb_charger *chg,
 		return -EINVAL;
 
 	chg->system_temp_level = val->intval;
+	#ifndef CONFIG_FORCE_FAST_CHARGE
+	if (chg->system_temp_level == chg->thermal_levels)
+		return vote(chg->chg_disable_votable,
+			THERMAL_DAEMON_VOTER, true, 0);
+#endif
 
 	if (chg->system_temp_level == chg->thermal_levels)
 		return vote(chg->chg_disable_votable,
