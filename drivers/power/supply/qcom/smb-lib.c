@@ -1,4 +1,4 @@
-/ SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2016-2020 The Linux Foundation. All rights reserved.
  */
 
@@ -3876,7 +3876,7 @@ irqreturn_t smblib_handle_icl_change(int irq, void *data)
 			delay = 0;
 #ifdef CONFIG_FORCE_FAST_CHARGE
 		}
-#endiff
+#endif
 
 		cancel_delayed_work_sync(&chg->icl_change_work);
 		schedule_delayed_work(&chg->icl_change_work,
