@@ -368,10 +368,10 @@
 #define USB2_MAX_CURRENT_MA			500
 #define USB3_MIN_CURRENT_MA			150
 #define USB3_MAX_CURRENT_MA			900
-#define DCP_MAX_CURRENT_MA			2000
+#define DCP_MAX_CURRENT_MA			1500
 #define SMB1351_IRQ_REG_COUNT			8
 #define SMB1351_CHG_PRE_MIN_MA			100
-#define SMB1351_CHG_FAST_MIN_MA			1500
+#define SMB1351_CHG_FAST_MIN_MA			1000
 #define SMB1351_CHG_FAST_MAX_MA			4500
 #define SMB1351_CHG_PRE_SHIFT			5
 #define SMB1351_CHG_FAST_SHIFT			4
@@ -738,7 +738,7 @@ static int smb1351_fastchg_current_set(struct smb1351_charger *chip,
 	}
 
 	/*
-	 * fast chg current could not support less than 1500mA
+	 * fast chg current could not support less than 1000mA
 	 * use pre chg to instead for the parallel charging
 	 */
 	if (fastchg_current < SMB1351_CHG_FAST_MIN_MA) {
@@ -809,7 +809,7 @@ static int smb1351_float_voltage_set(struct smb1351_charger *chip,
 	u8 temp;
 
 	if ((vfloat_mv < MIN_FLOAT_MV) || (vfloat_mv > MAX_FLOAT_MV)) {
-		pr_err("bad float voltage mv =%d asked to set\n", vfloat_mv);
+		pr_debug("bad float voltage mv =%d asked to set\n", vfloat_mv);
 		return -EINVAL;
 	}
 
@@ -1290,7 +1290,7 @@ static int smb1351_set_usb_chg_current(struct smb1351_charger *chip,
 		return 0;
 	}
 
-	/* set suspend bit when current_ma <= 2 */
+	/* set suspend bit when urrent_ma <= 2 */
 	if (current_ma <= SUSPEND_CURRENT_MA) {
 		smb1351_usb_suspend(chip, CURRENT, true);
 		pr_debug("USB suspend\n");
@@ -1556,7 +1556,7 @@ static enum power_supply_property smb1351_parallel_properties[] = {
 	POWER_SUPPLY_PROP_PARALLEL_MODE,
 	POWER_SUPPLY_PROP_INPUT_SUSPEND,
 	POWER_SUPPLY_PROP_PARALLEL_BATFET_MODE,
-    POWER_SUPPLY_PROP_MODEL_NAME,
+	POWER_SUPPLY_PROP_MODEL_NAME,
 };
 
 static int smb1351_parallel_set_chg_suspend(struct smb1351_charger *chip,
@@ -1835,7 +1835,7 @@ static int smb1351_parallel_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_MODEL_NAME:
 		val->strval = "smb1351";
-		break;	
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -3044,13 +3044,15 @@ static int smb1351_charger_remove(struct i2c_client *client)
 	debugfs_remove_recursive(chip->debug_root);
 	return 0;
 }
+
 static void smb1351_charger_shutdown(struct i2c_client *client)
 {
 	struct smb1351_charger *chip = i2c_get_clientdata(client);
 
-	if (!chip->parallel_charger_suspended)
+	if (chip->chg_present)
 		smb1351_usb_suspend(chip, USER, true);
 }
+
 static int smb1351_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
