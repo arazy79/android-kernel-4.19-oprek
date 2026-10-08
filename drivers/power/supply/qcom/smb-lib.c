@@ -971,7 +971,6 @@ int smblib_set_icl_current(struct smb_charger *chg, int icl_ua)
 			goto enable_icl_changed_interrupt;
 		}
 	} else {
-		set_sdp_current(chg, 100000);
 			/*
 		 * Try USB 2.0/3,0 option first on USB path when maximum input
 		 * current limit is 500mA or below for better accuracy; in case
