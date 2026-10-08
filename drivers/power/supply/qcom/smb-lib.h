@@ -77,6 +77,11 @@ enum print_reason {
 #ifndef WEAK_CHG_STORM_COUNT
 #define WEAK_CHG_STORM_COUNT	8
 #endif
+#ifdef CONFIG_MACH_ASUS_SDM660
+extern struct smb_charger *smbchg_dev;
+extern struct mutex asus_chg_lock;
+extern unsigned long last_jeita_time;
+#endif
 enum smb_mode {
 	PARALLEL_MASTER = 0,
 	PARALLEL_SLAVE,
