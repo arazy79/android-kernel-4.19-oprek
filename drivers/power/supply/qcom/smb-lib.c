@@ -18,6 +18,13 @@
 #include "step-chg-jeita.h"
 #include "storm-watch.h"
 
+/* ASUS GLOBAL VARS — DIBUNGKUS #ifdef */
+#ifdef CONFIG_MACH_ASUS_SDM660
+struct smb_charger *smbchg_dev;
+struct mutex asus_chg_lock;
+unsigned long last_jeita_time;
+#endif
+
 #ifdef CONFIG_MACH_ASUS_SDM660
 /* USB alert */
 #include <linux/iio/consumer.h>
@@ -6320,23 +6327,15 @@ static void smblib_destroy_votables(struct smb_charger *chg)
 		destroy_votable(chg->disable_power_role_switch);
 }
 
-static void smblib_iio_deinit(struct smb_charger *chg)
-{
-	if (!IS_ERR_OR_NULL(chg->iio.temp_chan))
-		iio_channel_release(chg->iio.temp_chan);
-	if (!IS_ERR_OR_NULL(chg->iio.temp_max_chan))
-		iio_channel_release(chg->iio.temp_max_chan);
-	if (!IS_ERR_OR_NULL(chg->iio.usbin_i_chan))
-		iio_channel_release(chg->iio.usbin_i_chan);
-	if (!IS_ERR_OR_NULL(chg->iio.usbin_v_chan))
-		iio_channel_release(chg->iio.usbin_v_chan);
-	if (!IS_ERR_OR_NULL(chg->iio.batt_i_chan))
-		iio_channel_release(chg->iio.batt_i_chan);
-}
-
 int smblib_init(struct smb_charger *chg)
 {
 	int rc = 0;
+
+#ifdef CONFIG_MACH_ASUS_SDM660
+	smbchg_dev = chg;
+	mutex_init(&asus_chg_lock);
+	last_jeita_time = jiffies;
+#endif
 
 	mutex_init(&chg->lock);
 	mutex_init(&chg->write_lock);
@@ -6347,6 +6346,7 @@ int smblib_init(struct smb_charger *chg)
 	INIT_WORK(&chg->rdstd_cc2_detach_work, rdstd_cc2_detach_work);
 	INIT_DELAYED_WORK(&chg->hvdcp_detect_work, smblib_hvdcp_detect_work);
 	INIT_DELAYED_WORK(&chg->clear_hdc_work, clear_hdc_work);
+
 #ifdef CONFIG_MACH_ASUS_SDM660
 /* Huaqin modify for ZQL1650-70 Identify Adapter ID by fangaijun at 2018/02/8 start */
 	INIT_DELAYED_WORK(&chg->asus_chg_flow_work, asus_chg_flow_work);
