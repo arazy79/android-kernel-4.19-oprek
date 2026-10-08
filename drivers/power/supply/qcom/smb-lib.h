@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /* Copyright (c) 2016-2018, 2020, The Linux Foundation. All rights reserved.
  */
+
 #ifndef __SMB2_CHARGER_H
 #define __SMB2_CHARGER_H
 #include <linux/types.h>
@@ -11,6 +12,7 @@
 #include <linux/extcon-provider.h>
 #include "storm-watch.h"
 #include "battery.h"
+
 enum print_reason {
 	PR_INTERRUPT	= BIT(0),
 	PR_REGISTER	= BIT(1),
@@ -18,6 +20,7 @@ enum print_reason {
 	PR_PARALLEL	= BIT(3),
 	PR_OTG		= BIT(4),
 };
+
 #define DEFAULT_VOTER			"DEFAULT_VOTER"
 #define USER_VOTER			"USER_VOTER"
 #define PD_VOTER			"PD_VOTER"
@@ -42,9 +45,7 @@ enum print_reason {
 #define USBIN_USBIN_BOOST_VOTER		"USBIN_USBIN_BOOST_VOTER"
 #define HVDCP_INDIRECT_VOTER		"HVDCP_INDIRECT_VOTER"
 #define MICRO_USB_VOTER			"MICRO_USB_VOTER"
-#ifndef DEBUG_BOARD_VOTER
-#define DEBUG_BOARD_VOTER		"fg_debug_board"
-#endif
+#define DEBUG_BOARD_VOTER		"DEBUG_BOARD_VOTER"
 #define PD_SUSPEND_SUPPORTED_VOTER	"PD_SUSPEND_SUPPORTED_VOTER"
 #define PL_DELAY_VOTER			"PL_DELAY_VOTER"
 #define CTM_VOTER			"CTM_VOTER"
@@ -63,30 +64,26 @@ enum print_reason {
 #define MOISTURE_VOTER			"MOISTURE_VOTER"
 #define HVDCP2_ICL_VOTER		"HVDCP2_ICL_VOTER"
 #define OV_VOTER			"OV_VOTER"
-#ifndef FG_ESR_VOTER
-#define FG_ESR_VOTER			"fg_esr_voter"
+#ifndef CONFIG_MACH_ASUS_SDM660
+#define FG_ESR_VOTER			"FG_ESR_VOTER"
 #endif
 #define FCC_STEPPER_VOTER		"FCC_STEPPER_VOTER"
 #define PD_NOT_SUPPORTED_VOTER		"PD_NOT_SUPPORTED_VOTER"
 #ifdef CONFIG_FORCE_FAST_CHARGE
 #define FORCE_FAST_CHARGE_VOTER		"FORCE_FAST_CHARGE_VOTER"
 #endif
+
 #define VCONN_MAX_ATTEMPTS	3
 #define OTG_MAX_ATTEMPTS	3
 #define BOOST_BACK_STORM_COUNT	3
-#ifndef WEAK_CHG_STORM_COUNT
 #define WEAK_CHG_STORM_COUNT	8
-#endif
-#ifdef CONFIG_MACH_ASUS_SDM660
-extern struct smb_charger *smbchg_dev;
-extern struct mutex asus_chg_lock;
-extern unsigned long last_jeita_time;
-#endif
+
 enum smb_mode {
 	PARALLEL_MASTER = 0,
 	PARALLEL_SLAVE,
 	NUM_MODES,
 };
+
 enum {
 	QC_CHARGER_DETECTION_WA_BIT	= BIT(0),
 	BOOST_BACK_WA			= BIT(1),
@@ -96,6 +93,7 @@ enum {
 	OV_IRQ_WA_BIT			= BIT(5),
 	TYPEC_PBS_WA_BIT		= BIT(6),
 };
+
 enum smb_irq_index {
 	CHG_ERROR_IRQ = 0,
 	CHG_STATE_CHANGE_IRQ,
@@ -137,11 +135,13 @@ enum smb_irq_index {
 	SWITCH_POWER_OK_IRQ,
 	SMB_IRQ_MAX,
 };
+
 enum try_sink_exit_mode {
 	ATTACHED_SRC = 0,
 	ATTACHED_SINK,
 	UNATTACHED_SINK,
 };
+
 struct smb_irq_info {
 	const char			*name;
 	const irq_handler_t		handler;
@@ -150,22 +150,27 @@ struct smb_irq_info {
 	struct smb_irq_data		*irq_data;
 	int				irq;
 };
+
 static const unsigned int smblib_extcon_cable[] = {
 	EXTCON_USB,
 	EXTCON_USB_HOST,
 	EXTCON_NONE,
 };
+
 /* EXTCON_USB and EXTCON_USB_HOST are mutually exclusive */
 static const u32 smblib_extcon_exclusive[] = {0x3, 0};
+
 struct smb_regulator {
 	struct regulator_dev	*rdev;
 	struct regulator_desc	rdesc;
 };
+
 struct smb_irq_data {
 	void			*parent_data;
 	const char		*name;
 	struct storm_watch	storm_data;
 };
+
 struct smb_chg_param {
 	const char	*name;
 	u16		reg;
@@ -178,6 +183,7 @@ struct smb_chg_param {
 				    int val_u,
 				    u8 *val_raw);
 };
+
 struct smb_chg_freq {
 	unsigned int		freq_5V;
 	unsigned int		freq_6V_8V;
@@ -187,6 +193,7 @@ struct smb_chg_freq {
 	unsigned int		freq_below_otg_threshold;
 	unsigned int		freq_above_otg_threshold;
 };
+
 struct smb_params {
 	struct smb_chg_param	fcc;
 	struct smb_chg_param	fv;
@@ -204,9 +211,11 @@ struct smb_params {
 	struct smb_chg_param	freq_buck;
 	struct smb_chg_param	freq_boost;
 };
+
 struct parallel_params {
 	struct power_supply	*psy;
 };
+
 struct smb_iio {
 	struct iio_channel	*temp_chan;
 	struct iio_channel	*temp_max_chan;
@@ -218,6 +227,7 @@ struct smb_iio {
 	struct iio_channel	*connector_temp_thr2_chan;
 	struct iio_channel	*connector_temp_thr3_chan;
 };
+
 struct reg_info {
 	u16		reg;
 	u8		mask;
@@ -225,6 +235,7 @@ struct reg_info {
 	u8		bak;
 	const char	*desc;
 };
+
 struct smb_charger {
 	struct device		*dev;
 	char			*name;
@@ -240,12 +251,14 @@ struct smb_charger {
 	struct charger_param    chg_param;
 	int			otg_delay_ms;
 	int			*weak_chg_icl_ua;
+
 	/* locks */
 	struct mutex		lock;
 	struct mutex		write_lock;
 	struct mutex		ps_change_lock;
 	struct mutex		otg_oc_lock;
 	struct mutex		vconn_oc_lock;
+
 	/* power supplies */
 	struct power_supply		*batt_psy;
 	struct power_supply		*usb_psy;
@@ -255,14 +268,18 @@ struct smb_charger {
 	struct power_supply		*usb_main_psy;
 	struct power_supply		*usb_port_psy;
 	enum power_supply_type		real_charger_type;
+
 	/* notifiers */
 	struct notifier_block	nb;
+
 	/* parallel charging */
 	struct parallel_params	pl;
+
 	/* regulators */
 	struct smb_regulator	*vbus_vreg;
 	struct smb_regulator	*vconn_vreg;
 	struct regulator	*dpdm_reg;
+
 	/* votables */
 	struct votable		*dc_suspend_votable;
 	struct votable		*fcc_votable;
@@ -282,6 +299,7 @@ struct smb_charger {
 	struct votable		*usb_irq_enable_votable;
 	struct votable		*typec_irq_disable_votable;
 	struct votable		*disable_power_role_switch;
+
 	/* work */
 	struct work_struct	bms_update_work;
 	struct work_struct	pl_update_work;
@@ -297,6 +315,7 @@ struct smb_charger {
 	struct work_struct	legacy_detection_work;
 	struct delayed_work	uusb_otg_work;
 	struct delayed_work	bb_removal_work;
+
 #ifdef CONFIG_MACH_ASUS_SDM660	
 /* Huaqin modify for ZQL1650-70 Identify Adapter ID by fangaijun at 2018/02/8 start */
 	struct delayed_work	asus_chg_flow_work;
@@ -306,12 +325,13 @@ struct smb_charger {
 	struct delayed_work	asus_min_monitor_work;
 /* Huaqin add for ZQL1650-68 Realize jeita function by fangaijun at 2018/02/03 end */
 /* Huaqin add for ZQL1650-68 systme suspend 1 min run sw jeita by fangaijun at 2018/02/06 start */
-	struct delayed_work	asus_batt_RTC_work;
+	struct delayed_work asus_batt_RTC_work;
 /* Huaqin add for ZQL1650-68 systme suspend 1 min run sw jeita by fangaijun at 2018/02/06 end */
 //Huaqin added by tangqingyong at 20180206 for USB alert start
 	struct iio_channel			*gpio12_vadc_chan;
 //Huaqin added by tangqingyong at 20180206 for USB alert end
 #endif
+
 	/* cached status */
 	int			voltage_min_uv;
 	int			voltage_max_uv;
@@ -357,6 +377,7 @@ struct smb_charger {
 	bool			in_chg_lock;
 	bool			fcc_stepper_enable;
 	bool			ufp_only_mode;
+
 	/* workaround flag */
 	u32			wa_flags;
 	bool			cc2_detach_wa_active;
@@ -368,16 +389,21 @@ struct smb_charger {
 	bool			non_compliant_chg_detected;
 	bool			fake_usb_insertion;
 	bool			reddragon_ipc_wa;
+
 	/* extcon for VBUS / ID notification to USB for uUSB */
 	struct extcon_dev	*extcon;
+
 	/* battery profile */
 	int			batt_profile_fcc_ua;
 	int			batt_profile_fv_uv;
+
 	/* qnovo */
 	int			usb_icl_delta_ua;
 	int			pulse_cnt;
+
 	int			die_health;
 };
+
 #ifdef CONFIG_MACH_ASUS_SDM660
 /* Huaqin modify for ZQL1650-70 Identify Adapter ID by fangaijun at 2018/02/8 start */
 //ASUS BSP : Add gpio control struct +++
@@ -388,17 +414,21 @@ struct gpio_control {
 //ASUS BSP : Add gpio control struct ---
 /* Huaqin modify for ZQL1650-70 Identify Adapter ID by fangaijun at 2018/02/8 end */
 #endif
+
 int smblib_read(struct smb_charger *chg, u16 addr, u8 *val);
 int smblib_masked_write(struct smb_charger *chg, u16 addr, u8 mask, u8 val);
 int smblib_write(struct smb_charger *chg, u16 addr, u8 val);
+
 int smblib_get_charge_param(struct smb_charger *chg,
 			    struct smb_chg_param *param, int *val_u);
 int smblib_get_usb_suspend(struct smb_charger *chg, int *suspend);
+
 int smblib_enable_charging(struct smb_charger *chg, bool enable);
 int smblib_set_charge_param(struct smb_charger *chg,
 			    struct smb_chg_param *param, int val_u);
 int smblib_set_usb_suspend(struct smb_charger *chg, bool suspend);
 int smblib_set_dc_suspend(struct smb_charger *chg, bool suspend);
+
 int smblib_mapping_soc_from_field_value(struct smb_chg_param *param,
 					     int val_u, u8 *val_raw);
 int smblib_mapping_cc_delta_to_field_value(struct smb_chg_param *param,
@@ -407,12 +437,15 @@ int smblib_mapping_cc_delta_from_field_value(struct smb_chg_param *param,
 					     int val_u, u8 *val_raw);
 int smblib_set_chg_freq(struct smb_chg_param *param,
 				int val_u, u8 *val_raw);
+
 int smblib_vbus_regulator_enable(struct regulator_dev *rdev);
 int smblib_vbus_regulator_disable(struct regulator_dev *rdev);
 int smblib_vbus_regulator_is_enabled(struct regulator_dev *rdev);
+
 int smblib_vconn_regulator_enable(struct regulator_dev *rdev);
 int smblib_vconn_regulator_disable(struct regulator_dev *rdev);
 int smblib_vconn_regulator_is_enabled(struct regulator_dev *rdev);
+
 irqreturn_t smblib_handle_debug(int irq, void *data);
 irqreturn_t smblib_handle_otg_overcurrent(int irq, void *data);
 irqreturn_t smblib_handle_chg_state_change(int irq, void *data);
@@ -428,6 +461,7 @@ irqreturn_t smblib_handle_dc_plugin(int irq, void *data);
 irqreturn_t smblib_handle_high_duty_cycle(int irq, void *data);
 irqreturn_t smblib_handle_switcher_power_ok(int irq, void *data);
 irqreturn_t smblib_handle_wdog_bark(int irq, void *data);
+
 int smblib_get_prop_input_suspend(struct smb_charger *chg,
 				union power_supply_propval *val);
 #ifdef CONFIG_MACH_ASUS_SDM660
@@ -470,6 +504,7 @@ int smblib_set_prop_system_temp_level(struct smb_charger *chg,
 				const union power_supply_propval *val);
 int smblib_set_prop_input_current_limited(struct smb_charger *chg,
 				const union power_supply_propval *val);
+
 int smblib_get_prop_dc_present(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_get_prop_dc_online(struct smb_charger *chg,
@@ -478,6 +513,7 @@ int smblib_get_prop_dc_current_max(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_set_prop_dc_current_max(struct smb_charger *chg,
 				const union power_supply_propval *val);
+
 int smblib_get_prop_usb_present(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_get_prop_usb_online(struct smb_charger *chg,
@@ -562,6 +598,7 @@ int smblib_stat_sw_override_cfg(struct smb_charger *chg, bool override);
 void smblib_usb_typec_change(struct smb_charger *chg);
 int smblib_toggle_stat(struct smb_charger *chg, int reset);
 int smblib_force_ufp(struct smb_charger *chg);
+
 int smblib_init(struct smb_charger *chg);
 int smblib_deinit(struct smb_charger *chg);
 #endif /* __SMB2_CHARGER_H */
