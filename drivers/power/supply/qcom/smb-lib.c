@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2016-2020 The Linux Foundation. All rights reserved.
  */
-
 #include <linux/device.h>
 #include <linux/regmap.h>
 #include <linux/delay.h>
@@ -11,17 +10,38 @@
 #include <linux/qpnp/qpnp-revid.h>
 #include <linux/irq.h>
 #include <linux/pmic-voter.h>
+#include <linux/moduleparam.h>
 #include "smb-lib.h"
 #include "smb-reg.h"
 #include "battery.h"
 #include "step-chg-jeita.h"
 #include "storm-watch.h"
 
+#ifdef CONFIG_MACH_ASUS_SDM660
+/* USB alert */
+#include <linux/iio/consumer.h>
+/* Realize jeita */
+#include "fg-core.h"
+#include <linux/gpio.h>
+/* Misc */
+#include <linux/fs.h>
+#include <linux/alarmtimer.h>
+#include <linux/pm_wakeup.h>
+#include <linux/unistd.h>
+#include <linux/fcntl.h>
+#include <linux/slab.h>
+#include <linux/uaccess.h>
+#define START_REPORT_BAT_TEMPRATURE  620
+#endif
+
+static unsigned int forced_current = 2500;
+module_param(forced_current, uint, S_IWUSR | S_IRUGO);
+
 #ifdef CONFIG_FORCE_FAST_CHARGE
 #include <linux/fastchg.h>
 static bool const_icl_enable = true;
 module_param(const_icl_enable, bool, 0644);
-#define CONST_ICL_UA 250000
+#define CONST_ICL_UA 2500000
 #endif
 
 #define smblib_err(chg, fmt, ...)		\
