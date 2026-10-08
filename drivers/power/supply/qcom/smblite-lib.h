@@ -475,4 +475,9 @@ int smblite_lib_set_prop_usb_type(struct smb_charger *chg,
 void smblite_update_usb_desc(struct smb_charger *chg);
 int smblite_lib_init(struct smb_charger *chg);
 int smblite_lib_deinit(struct smb_charger *chg);
+#ifdef CONFIG_MACH_ASUS_SDM660
+extern struct smb_charger *smbchg_dev;
+extern struct mutex asus_chg_lock;
+extern unsigned long last_jeita_time;
+#endif
 #endif /* __SMBLITE_LIB_H */
