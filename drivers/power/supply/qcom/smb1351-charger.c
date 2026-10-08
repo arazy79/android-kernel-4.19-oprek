@@ -1556,6 +1556,7 @@ static enum power_supply_property smb1351_parallel_properties[] = {
 	POWER_SUPPLY_PROP_PARALLEL_MODE,
 	POWER_SUPPLY_PROP_INPUT_SUSPEND,
 	POWER_SUPPLY_PROP_PARALLEL_BATFET_MODE,
+    POWER_SUPPLY_PROP_MODEL_NAME,
 };
 
 static int smb1351_parallel_set_chg_suspend(struct smb1351_charger *chip,
@@ -1715,7 +1716,7 @@ static int smb1351_parallel_set_property(struct power_supply *psy,
 				       enum power_supply_property prop,
 				       const union power_supply_propval *val)
 {
-	int rc = 0, index;
+	int rc = 0, index, current_ma;
 	struct smb1351_charger *chip = power_supply_get_drvdata(psy);
 
 	switch (prop) {
@@ -1738,8 +1739,13 @@ static int smb1351_parallel_set_property(struct power_supply *psy,
 					chip->target_fastchg_current_max_ma);
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
-		index = smb1351_get_closest_usb_setpoint(val->intval / 1000);
-		chip->usb_psy_ma = usb_chg_current[index];
+		current_ma = val->intval / 1000;
+		if (current_ma > SUSPEND_CURRENT_MA) {
+			index = smb1351_get_closest_usb_setpoint(current_ma);
+			chip->usb_psy_ma = usb_chg_current[index];
+		} else {
+			chip->usb_psy_ma = current_ma;
+		}
 		if (!chip->parallel_charger_suspended)
 			rc = smb1351_set_usb_chg_current(chip,
 						chip->usb_psy_ma);
@@ -1827,6 +1833,9 @@ static int smb1351_parallel_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_PARALLEL_BATFET_MODE:
 		val->intval = chip->pl_batfet_mode;
 		break;
+	case POWER_SUPPLY_PROP_MODEL_NAME:
+		val->strval = "smb1351";
+		break;	
 	default:
 		return -EINVAL;
 	}
@@ -3035,7 +3044,13 @@ static int smb1351_charger_remove(struct i2c_client *client)
 	debugfs_remove_recursive(chip->debug_root);
 	return 0;
 }
+static void smb1351_charger_shutdown(struct i2c_client *client)
+{
+	struct smb1351_charger *chip = i2c_get_clientdata(client);
 
+	if (!chip->parallel_charger_suspended)
+		smb1351_usb_suspend(chip, USER, true);
+}
 static int smb1351_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
@@ -3114,6 +3129,7 @@ static struct i2c_driver smb1351_charger_driver = {
 	},
 	.probe		= smb1351_charger_probe,
 	.remove		= smb1351_charger_remove,
+	.shutdown	= smb1351_charger_shutdown,
 	.id_table	= smb1351_charger_id,
 };
 
